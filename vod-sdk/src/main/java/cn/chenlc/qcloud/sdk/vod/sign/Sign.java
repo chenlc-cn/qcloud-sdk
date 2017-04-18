@@ -19,6 +19,7 @@ package cn.chenlc.qcloud.sdk.vod.sign;
 import cn.chenlc.qcloud.sdk.common.http.HttpMethod;
 import cn.chenlc.qcloud.sdk.common.sign.Credential;
 import cn.chenlc.qcloud.sdk.vod.ParamKeys;
+import cn.chenlc.qcloud.sdk.vod.VodConstants;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.digest.HmacUtils;
 
@@ -41,15 +42,12 @@ public class Sign {
      *
      * @param credential 安全访问凭证
      * @param method HTTP请求方法， POST或GET
-     * @param requestHost 请求的主机
-     * @param requestPath 请求的路径
      * @param params 参数列表
      * @return 签名字符串
      */
     public static String sign(Credential credential, HttpMethod method,
-                              String requestHost, String requestPath,
                               Map<String, String> params) {
-        String forSign = generateStringForSign(credential, method, requestHost, requestPath, params);
+        String forSign = generateStringForSign(credential, method, VodConstants.REQUEST_HOST, VodConstants.REQUEST_PATH, params);
         byte[] signedBytes;
         if (HMAC_SHA256.equals(params.get(ParamKeys.SIGNATURE_METHOD_KEY))) {
             signedBytes = HmacUtils.hmacSha256(credential.getSecretKey(), forSign);

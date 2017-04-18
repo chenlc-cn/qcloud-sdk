@@ -26,6 +26,7 @@ import cn.chenlc.qcloud.sdk.common.sign.Credential;
 import cn.chenlc.qcloud.sdk.common.utils.DateUtils;
 import cn.chenlc.qcloud.sdk.vod.IVodClassManager;
 import cn.chenlc.qcloud.sdk.vod.ParamKeys;
+import cn.chenlc.qcloud.sdk.vod.VodConstants;
 import cn.chenlc.qcloud.sdk.vod.sign.Sign;
 import cn.chenlc.qcloud.sdk.vod.vo.VodClassInfo;
 import cn.chenlc.qcloud.sdk.vod.vo.VodClassSimpleInfo;
@@ -86,10 +87,6 @@ public class VodClassOperator extends AbstractOperator implements IVodClassManag
         private static final String INPUT_CLASS_ID = "classId";
     }
 
-    private final String requestHost = "vod.api.qcloud.com";
-    private final String requestPath = "/v2/index.php";
-    private final String requestUrl = "https://vod.api.qcloud.com/v2/index.php";
-
     public VodClassOperator(Credential credential, QcloudHttpClient httpClient) {
         super(credential, httpClient);
     }
@@ -106,7 +103,7 @@ public class VodClassOperator extends AbstractOperator implements IVodClassManag
         }
 
         HttpRequest request = new HttpRequest();
-        request.setUrl(requestUrl).setMethod(HttpMethod.GET).setParams(params);
+        request.setUrl(VodConstants.REQUEST_URL).setMethod(HttpMethod.GET).setParams(params);
 
         String resJsonString = httpClient.sendHttpRequest(request);
         JSONObject resJson = JSON.parseObject(resJsonString);
@@ -120,10 +117,10 @@ public class VodClassOperator extends AbstractOperator implements IVodClassManag
     @Override
     public VodClassTree describeAllClass() throws QcloudSdkException {
         Map<String, String> params = genCommonParams(DESCRIBE_ALL_CLASS.ACTION, null);
-        params.put(ParamKeys.SIGNATURE_KEY, Sign.sign(credential, HttpMethod.GET, requestHost, requestPath, params));
+        params.put(ParamKeys.SIGNATURE_KEY, Sign.sign(credential, HttpMethod.GET, params));
 
         HttpRequest request = new HttpRequest();
-        request.setUrl(requestUrl).setMethod(HttpMethod.GET).setParams(params);
+        request.setUrl(VodConstants.REQUEST_URL).setMethod(HttpMethod.GET).setParams(params);
 
         String resJsonString = httpClient.sendHttpRequest(request);
         JSONObject resJson = JSON.parseObject(resJsonString);
@@ -169,10 +166,10 @@ public class VodClassOperator extends AbstractOperator implements IVodClassManag
     @Override
     public List<VodClassSimpleInfo> describeClass() throws QcloudSdkException {
         Map<String, String> params = genCommonParams(DESCRIBE_CLASS.ACTION, null);
-        params.put(ParamKeys.SIGNATURE_KEY, Sign.sign(credential, HttpMethod.GET, requestHost, requestPath, params));
+        params.put(ParamKeys.SIGNATURE_KEY, Sign.sign(credential, HttpMethod.GET, params));
 
         HttpRequest request = new HttpRequest();
-        request.setUrl(requestUrl).setMethod(HttpMethod.GET).setParams(params);
+        request.setUrl(VodConstants.REQUEST_URL).setMethod(HttpMethod.GET).setParams(params);
 
         String resJsonString = httpClient.sendHttpRequest(request);
         JSONObject resJson = JSON.parseObject(resJsonString);
@@ -203,10 +200,10 @@ public class VodClassOperator extends AbstractOperator implements IVodClassManag
         Map<String, String> params = genCommonParams(MODIFY_CLASS.ACTION, null);
         params.put(MODIFY_CLASS.INPUT_CLASS_ID, classId.toString());
         params.put(MODIFY_CLASS.INPUT_NEW_CLASS_NAME, newClassName);
-        params.put(ParamKeys.SIGNATURE_KEY, Sign.sign(credential, HttpMethod.GET, requestHost, requestPath, params));
+        params.put(ParamKeys.SIGNATURE_KEY, Sign.sign(credential, HttpMethod.GET, params));
 
         HttpRequest request = new HttpRequest();
-        request.setUrl(requestUrl).setMethod(HttpMethod.GET).setParams(params);
+        request.setUrl(VodConstants.REQUEST_URL).setMethod(HttpMethod.GET).setParams(params);
 
         String resJsonString = httpClient.sendHttpRequest(request);
         JSONObject resJson = JSON.parseObject(resJsonString);
@@ -223,10 +220,10 @@ public class VodClassOperator extends AbstractOperator implements IVodClassManag
         }
         Map<String, String> params = genCommonParams(DELETE_CLASS.ACTION, null);
         params.put(DELETE_CLASS.INPUT_CLASS_ID, classId.toString());
-        params.put(ParamKeys.SIGNATURE_KEY, Sign.sign(credential, HttpMethod.GET, requestHost, requestPath, params));
+        params.put(ParamKeys.SIGNATURE_KEY, Sign.sign(credential, HttpMethod.GET, params));
 
         HttpRequest request = new HttpRequest();
-        request.setUrl(requestUrl).setMethod(HttpMethod.GET).setParams(params);
+        request.setUrl(VodConstants.REQUEST_URL).setMethod(HttpMethod.GET).setParams(params);
 
         String resJsonString = httpClient.sendHttpRequest(request);
         JSONObject resJson = JSON.parseObject(resJsonString);

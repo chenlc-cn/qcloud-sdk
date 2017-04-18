@@ -45,11 +45,7 @@ import java.util.Map;
  * @version 1.0
  * @since 2017/4/15
  */
-public class VodClient implements IVodClassManager{
-
-    private final String requestHost = "vod.api.qcloud.com";
-    private final String requestPath = "/v2/index.php";
-    private final String requestUrl = "https://vod.api.qcloud.com/v2/index.php";
+public class VodClient implements IVodClassManager, IVod1_0Compatibility{
 
     private final Credential credential;
     private final QcloudHttpClient httpClient;
@@ -119,6 +115,7 @@ public class VodClient implements IVodClassManager{
      * @return 视频文件信息集合
      * @throws QcloudSdkException 请求失败时
      */
+    @Override
     public List<VodFileInfo> describeRecordPlayInfo(String vid) throws QcloudSdkException {
         if (StringUtils.isBlank(vid)) {
             throw new ParamException("vid is empty");
@@ -129,10 +126,10 @@ public class VodClient implements IVodClassManager{
         params.put(ParamKeys.NONCE_KEY, RandomStringUtils.randomAlphanumeric(8));
         params.put(ParamKeys.SECRET_ID_KEY, credential.getSecretId());
         params.put(DESCRIBE_RECORD_PLAY_INFO.INPUT_VID, vid);
-        params.put(ParamKeys.SIGNATURE_KEY, Sign.sign(credential, HttpMethod.GET, requestHost, requestPath, params));
+        params.put(ParamKeys.SIGNATURE_KEY, Sign.sign(credential, HttpMethod.GET, params));
 
         HttpRequest request = new HttpRequest();
-        request.setUrl(requestUrl).setMethod(HttpMethod.GET).setParams(params);
+        request.setUrl(VodConstants.REQUEST_URL).setMethod(HttpMethod.GET).setParams(params);
 
         String resJsonString = httpClient.sendHttpRequest(request);
         JSONObject resJson = JSON.parseObject(resJsonString);
