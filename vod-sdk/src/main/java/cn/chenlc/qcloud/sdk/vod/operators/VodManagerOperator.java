@@ -130,9 +130,6 @@ public class VodManagerOperator extends AbstractOperator implements IVodManager{
         Map<String, String> params = genCommonParams(MODIFY_VOD_INFO.ACTION, null);
         params.put(MODIFY_VOD_INFO.INPUT_FILE_ID, fileId);
         for (NamedParamPair p : modifyParams) {
-            String key = p.getKey();
-            String value = p.getValue();
-            System.out.println(key + " = " + value);
             params.put(p.getKey(), p.getValue());
         }
         params.put(ParamKeys.SIGNATURE_KEY, Sign.sign(credential, HttpMethod.GET, params));
