@@ -24,7 +24,7 @@ package cn.chenlc.qcloud.sdk.common.exceptions;
 public class ServerException extends QcloudSdkException {
 
     public ServerException(int code, String message) {
-        super(code, message);
+        super(code, code + ": " + message);
     }
 
     public ServerException(String message) {

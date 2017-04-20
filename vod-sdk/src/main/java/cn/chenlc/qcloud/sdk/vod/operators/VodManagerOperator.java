@@ -37,6 +37,7 @@ import com.alibaba.fastjson.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 /**
  * 点播服务，视频管理操作实现
@@ -58,7 +59,7 @@ public class VodManagerOperator extends AbstractOperator implements IVodManager{
         private static final String OUTPUT_PLAYSET_WIDTH = "vwidth";
     }
 
-    private static final class MODIFY_VOD_IFNO {
+    private static final class MODIFY_VOD_INFO {
         private static final String ACTION = "ModifyVodInfo";
         private static final String INPUT_FILE_ID = "fileId";
     }
@@ -126,10 +127,13 @@ public class VodManagerOperator extends AbstractOperator implements IVodManager{
 
     @Override
     public void modifyVodInfo(String fileId, NamedParamPair... modifyParams) throws QcloudSdkException {
-        Map<String, String> params = genCommonParams(MODIFY_VOD_IFNO.ACTION, null);
-        params.put(MODIFY_VOD_IFNO.INPUT_FILE_ID, fileId);
+        Map<String, String> params = genCommonParams(MODIFY_VOD_INFO.ACTION, null);
+        params.put(MODIFY_VOD_INFO.INPUT_FILE_ID, fileId);
         for (NamedParamPair p : modifyParams) {
-            params.put(p.getKey().getParamName(), p.getValue());
+            String key = p.getKey();
+            String value = p.getValue();
+            System.out.println(key + " = " + value);
+            params.put(p.getKey(), p.getValue());
         }
         params.put(ParamKeys.SIGNATURE_KEY, Sign.sign(credential, HttpMethod.GET, params));
 

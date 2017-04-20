@@ -25,16 +25,16 @@ package cn.chenlc.qcloud.sdk.vod;
  */
 public class NamedParamPair {
     
-    private final NamedParamEnum key;
+    private final String key;
     
     private final String value;
 
-    public NamedParamPair(NamedParamEnum key, String value) {
+    NamedParamPair(String key, String value) {
         this.key = key;
         this.value = value;
     }
 
-    public NamedParamEnum getKey() {
+    public String getKey() {
         return key;
     }
 

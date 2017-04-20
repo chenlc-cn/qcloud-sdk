@@ -30,7 +30,7 @@ import cn.chenlc.qcloud.sdk.vod.VodConstants;
 import cn.chenlc.qcloud.sdk.vod.sign.Sign;
 import cn.chenlc.qcloud.sdk.vod.vo.VodClassInfo;
 import cn.chenlc.qcloud.sdk.vod.vo.VodClassSimpleInfo;
-import cn.chenlc.qcloud.sdk.vod.vo.VodClassTree;
+import cn.chenlc.qcloud.sdk.vod.vo.VodClassTreeMap;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -92,7 +92,7 @@ public class VodClassOperator extends AbstractOperator implements IVodClassManag
     }
 
     @Override
-    public String createClass(String className, Integer parentId) throws QcloudSdkException {
+    public int createClass(String className, Integer parentId) throws QcloudSdkException {
         if (StringUtils.isBlank(className)) {
             throw new IllegalArgumentException("className is empty");
         }
@@ -101,6 +101,7 @@ public class VodClassOperator extends AbstractOperator implements IVodClassManag
         if (parentId != null) {
             params.put(CREATE_CLASS.INPUT_PARENT_ID, parentId.toString());
         }
+        params.put(ParamKeys.SIGNATURE_KEY, Sign.sign(credential, HttpMethod.GET, params));
 
         HttpRequest request = new HttpRequest();
         request.setUrl(VodConstants.REQUEST_URL).setMethod(HttpMethod.GET).setParams(params);
@@ -111,11 +112,11 @@ public class VodClassOperator extends AbstractOperator implements IVodClassManag
         if (code != 0) {
             throw new ServerException(code, resJson.getString(ParamKeys.OUTPUT_MESSAGE));
         }
-        return resJson.getString(CREATE_CLASS.OUTPUT_NEW_CLASS_ID);
+        return resJson.getIntValue(CREATE_CLASS.OUTPUT_NEW_CLASS_ID);
     }
 
     @Override
-    public VodClassTree describeAllClass() throws QcloudSdkException {
+    public VodClassTreeMap describeAllClass() throws QcloudSdkException {
         Map<String, String> params = genCommonParams(DESCRIBE_ALL_CLASS.ACTION, null);
         params.put(ParamKeys.SIGNATURE_KEY, Sign.sign(credential, HttpMethod.GET, params));
 
@@ -129,19 +130,19 @@ public class VodClassOperator extends AbstractOperator implements IVodClassManag
             throw new ServerException(code, resJson.getString(ParamKeys.OUTPUT_MESSAGE));
         }
 
-        VodClassTree tree = new VodClassTree();
+        VodClassTreeMap tree = new VodClassTreeMap();
         JSONArray data = resJson.getJSONArray(ParamKeys.OUTPUT_DATA);
 
         for (int i = 0; i < data.size(); i++) {
             JSONObject nodeInfoJson = data.getJSONObject(i);
-            VodClassTree.TreeNode node = genTreeNode(nodeInfoJson);
+            VodClassTreeMap.TreeNode node = genTreeNode(nodeInfoJson);
             tree.addNode(node.getNodeInfo().getName(), node);
         }
 
         return tree;
     }
 
-    private VodClassTree.TreeNode genTreeNode(JSONObject jo) {
+    private VodClassTreeMap.TreeNode genTreeNode(JSONObject jo) {
         JSONObject infoObj = jo.getJSONObject(DESCRIBE_ALL_CLASS.OUTPUT_INFO);
         VodClassInfo nodeInfo = new VodClassInfo();
 
@@ -151,13 +152,13 @@ public class VodClassOperator extends AbstractOperator implements IVodClassManag
         nodeInfo.setLevel(infoObj.getIntValue(DESCRIBE_ALL_CLASS.OUTPUT_LEVEL));
         nodeInfo.setFileCount(infoObj.getIntValue(DESCRIBE_ALL_CLASS.OUTPUT_FILE_NUM));
 
-        VodClassTree.TreeNode result = new VodClassTree.TreeNode(nodeInfo);
+        VodClassTreeMap.TreeNode result = new VodClassTreeMap.TreeNode(nodeInfo);
 
         JSONArray subClasses = jo.getJSONArray(DESCRIBE_ALL_CLASS.OUTPUT_SUB_CLASS);
         for (int i = 0; i < subClasses.size(); i++) {
             JSONObject sjo = subClasses.getJSONObject(i);
-            VodClassTree.TreeNode node = genTreeNode(sjo);
-            result.addSubClass(node.getNodeInfo().getName(), node);
+            VodClassTreeMap.TreeNode node = genTreeNode(sjo);
+            result.addNode(node.getNodeInfo().getName(), node);
         }
 
         return result;

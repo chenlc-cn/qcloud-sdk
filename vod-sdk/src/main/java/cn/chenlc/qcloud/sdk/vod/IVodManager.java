@@ -56,19 +56,18 @@ public interface IVodManager {
         }
     }
 
-    enum ModifyVodInfoParamNames implements NamedParamEnum {
-        //FILE_ID("fileId"),
-        FILE_NAME("fileName"),
-        FILE_INTRO("fileIntro"),
-        CLASS_ID("classId"),
-        EXPIRE_TIME("expireTime");
-        private String name;
-        ModifyVodInfoParamNames(String name) {
-            this.name = name;
+    class ModifyVodInfoParamBuilder {
+        public static NamedParamPair classId(String value) {
+            return new NamedParamPair("classId", value);
         }
-        @Override
-        public String getParamName() {
-            return null;
+        public static NamedParamPair fileName(String value) {
+            return new NamedParamPair("fileName", value);
+        }
+        public static NamedParamPair fileIntro(String value) {
+            return new NamedParamPair("fileIntro", value);
+        }
+        public static NamedParamPair expireTime(String value) {
+            return new NamedParamPair("expireTime", value);
         }
     }
 

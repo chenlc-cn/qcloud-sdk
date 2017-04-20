@@ -17,10 +17,11 @@
 package cn.chenlc.qcloud.sdk.vod.examples;
 
 import cn.chenlc.qcloud.sdk.vod.VodClient;
-import cn.chenlc.qcloud.sdk.vod.vo.VodClassInfo;
-import cn.chenlc.qcloud.sdk.vod.vo.VodClassTree;
+import cn.chenlc.qcloud.sdk.vod.vo.VodClassTreeMap;
+import cn.chenlc.qcloud.sdk.vod.vo.VodFileInfo;
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
+
+import java.util.List;
 
 /**
  * @author chenlc
@@ -37,10 +38,6 @@ public class ClassManage {
 
         VodClient vodClient = new VodClient(appId, secretId, secretKey);
 
-        VodClassTree tree = vodClient.describeAllClass();
-
-        System.out.println(tree.toString());
-
-        System.out.print(JSON.toJSONString(vodClient.describeClass()));
+        List<VodFileInfo> infos = vodClient.describeRecordPlayInfo("200036920_1d96a669ae114e5680c8bb786efa3356");
     }
 }

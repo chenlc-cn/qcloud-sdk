@@ -22,11 +22,9 @@ import cn.chenlc.qcloud.sdk.common.exceptions.ServerException;
 import cn.chenlc.qcloud.sdk.common.http.*;
 import cn.chenlc.qcloud.sdk.common.sign.Credential;
 import cn.chenlc.qcloud.sdk.vod.operators.VodClassOperator;
+import cn.chenlc.qcloud.sdk.vod.operators.VodManagerOperator;
 import cn.chenlc.qcloud.sdk.vod.sign.Sign;
-import cn.chenlc.qcloud.sdk.vod.vo.VodClassSimpleInfo;
-import cn.chenlc.qcloud.sdk.vod.vo.VodClassTree;
-import cn.chenlc.qcloud.sdk.vod.vo.VodFileInfo;
-import cn.chenlc.qcloud.sdk.vod.vo.VodFilePlayInfo;
+import cn.chenlc.qcloud.sdk.vod.vo.*;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -45,12 +43,13 @@ import java.util.Map;
  * @version 1.0
  * @since 2017/4/15
  */
-public class VodClient implements IVodClassManager, IVod1_0Compatibility{
+public class VodClient implements IVodClassManager, IVod1_0Compatibility, IVodManager{
 
     private final Credential credential;
     private final QcloudHttpClient httpClient;
 
     private IVodClassManager classOperator;
+    private IVodManager vodManager;
 
     public VodClient(int appId, String secretId, String secretKey) {
         this(new ClientConfig(), new Credential(appId, secretId, secretKey));
@@ -64,15 +63,16 @@ public class VodClient implements IVodClassManager, IVod1_0Compatibility{
         this.credential = credential;
         this.httpClient = httpClient;
         this.classOperator = new VodClassOperator(credential, httpClient);
+        this.vodManager = new VodManagerOperator(credential, httpClient);
     }
 
     @Override
-    public String createClass(String className, Integer parentId) throws QcloudSdkException {
+    public int createClass(String className, Integer parentId) throws QcloudSdkException {
         return this.classOperator.createClass(className, parentId);
     }
 
     @Override
-    public VodClassTree describeAllClass() throws QcloudSdkException {
+    public VodClassTreeMap describeAllClass() throws QcloudSdkException {
         return this.classOperator.describeAllClass();
     }
 
@@ -91,10 +91,57 @@ public class VodClient implements IVodClassManager, IVod1_0Compatibility{
         this.classOperator.deleteClass(classId);
     }
 
+    // 视频管理
+    @Override
+    public List<VodFilePlayInfo> describeVodPlayUrls(String fileId) throws QcloudSdkException {
+        return vodManager.describeVodPlayUrls(fileId);
+    }
+
+    @Override
+    public void getVideoInfo(String fileId, InfoTypes... infoFilter) throws QcloudSdkException {
+        vodManager.getVideoInfo(fileId, infoFilter);
+    }
+
+    @Override
+    public List<VodFileFullInfo> describeVodInfo(NamedParamPair... queryParams) throws QcloudSdkException {
+        return vodManager.describeVodInfo(queryParams);
+    }
+
+    @Override
+    public List<VodFileInfo> describeVodPlayInfo(String fileName, Integer pageNo, Integer pageSize) throws QcloudSdkException {
+        return vodManager.describeVodPlayInfo(fileName, pageNo, pageSize);
+    }
+
+    @Override
+    public void createVodTags(String fileId, String... tags) throws QcloudSdkException {
+        vodManager.createVodTags(fileId, tags);
+    }
+
+    @Override
+    public void deleteVodTags(String fileId, String... tags) throws QcloudSdkException {
+        vodManager.deleteVodTags(fileId, tags);
+    }
+
+    @Override
+    public void modifyVodInfo(String fileId, NamedParamPair... modifyParams) throws QcloudSdkException {
+        vodManager.modifyVodInfo(fileId, modifyParams);
+    }
+
+    @Override
+    public void deleteVodFile(String fileId, int priority) throws QcloudSdkException {
+        vodManager.deleteVodFile(fileId, priority);
+    }
+
+    @Override
+    public void describeVodCover(String fileId, int type, String snapshotUrl) throws QcloudSdkException {
+        vodManager.describeVodCover(fileId, type, snapshotUrl);
+    }
+
 
     private static final class DESCRIBE_RECORD_PLAY_INFO {
         private static final String ACTION = "DescribeRecordPlayInfo";
         private static final String INPUT_VID = "vid";
+        private static final String OUTPUT_FILE_SET = "fileSet";
         private static final String OUTPUT_FILE_ID = "fileId";
         private static final String OUTPUT_FILE_NAME = "fileName";
         private static final String OUTPUT_DURATION = "duration";
@@ -138,7 +185,7 @@ public class VodClient implements IVodClassManager, IVod1_0Compatibility{
             throw new ServerException(code, resJson.getString(ParamKeys.OUTPUT_MESSAGE));
         }
 
-        JSONArray data = resJson.getJSONArray(ParamKeys.OUTPUT_DATA);
+        JSONArray data = resJson.getJSONArray(DESCRIBE_RECORD_PLAY_INFO.OUTPUT_FILE_SET);
         List<VodFileInfo> result = new ArrayList<>(data.size());
         for (int i = 0; i < data.size(); i++) {
             JSONObject fileObj = data.getJSONObject(i);
@@ -150,16 +197,18 @@ public class VodClient implements IVodClassManager, IVod1_0Compatibility{
                     fileObj.getString(DESCRIBE_RECORD_PLAY_INFO.OUTPUT_IMAGE_URL)
             );
             JSONArray playSet = fileObj.getJSONArray(DESCRIBE_RECORD_PLAY_INFO.OUTPUT_PLAYSET);
-            for (int j = 0; j < playSet.size(); j++) {
-                JSONObject playSetObj = playSet.getJSONObject(j);
-                VodFilePlayInfo playInfo = new VodFilePlayInfo(
-                        playSetObj.getString(DESCRIBE_RECORD_PLAY_INFO.OUTPUT_PLAYSET_URL),
-                        playSetObj.getIntValue(DESCRIBE_RECORD_PLAY_INFO.OUTPUT_PLAYSET_DEFINITION),
-                        playSetObj.getIntValue(DESCRIBE_RECORD_PLAY_INFO.OUTPUT_PLAYSET_BITRATE),
-                        playSetObj.getIntValue(DESCRIBE_RECORD_PLAY_INFO.OUTPUT_PLAYSET_HEIGHT),
-                        playSetObj.getIntValue(DESCRIBE_RECORD_PLAY_INFO.OUTPUT_PLAYSET_WIDTH)
-                );
-                fileInfo.addPlayInfo(playInfo);
+            if (playSet != null) {
+                for (int j = 0; j < playSet.size(); j++) {
+                    JSONObject playSetObj = playSet.getJSONObject(j);
+                    VodFilePlayInfo playInfo = new VodFilePlayInfo(
+                            playSetObj.getString(DESCRIBE_RECORD_PLAY_INFO.OUTPUT_PLAYSET_URL),
+                            playSetObj.getIntValue(DESCRIBE_RECORD_PLAY_INFO.OUTPUT_PLAYSET_DEFINITION),
+                            playSetObj.getIntValue(DESCRIBE_RECORD_PLAY_INFO.OUTPUT_PLAYSET_BITRATE),
+                            playSetObj.getIntValue(DESCRIBE_RECORD_PLAY_INFO.OUTPUT_PLAYSET_HEIGHT),
+                            playSetObj.getIntValue(DESCRIBE_RECORD_PLAY_INFO.OUTPUT_PLAYSET_WIDTH)
+                    );
+                    fileInfo.addPlayInfo(playInfo);
+                }
             }
             result.add(fileInfo);
         }

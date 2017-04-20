@@ -28,24 +28,24 @@ import java.util.Map;
  * @version 1.0
  * @since 2017/4/17
  */
-public class VodClassTree {
+public class VodClassTreeMap {
 
     private Map<String, TreeNode> nodes;
 
-    public VodClassTree() {
+    public VodClassTreeMap() {
         this.nodes = new LinkedHashMap<>();
-    }
-
-    public Map<String, TreeNode> getNodes() {
-        return nodes;
-    }
-
-    public void setNodes(Map<String, TreeNode> nodes) {
-        this.nodes = nodes;
     }
 
     public void addNode(String name, TreeNode node) {
         this.nodes.put(name, node);
+    }
+
+    public TreeNode getNode(String name) {
+        return nodes.get(name);
+    }
+
+    public boolean hasNode(String name) {
+        return nodes.containsKey(name);
     }
 
     @Override
@@ -66,12 +66,16 @@ public class VodClassTree {
             return nodeInfo;
         }
 
-        public Map<String, TreeNode> getSubClasses() {
-            return subClasses;
+        public void addNode(String name, TreeNode node) {
+            this.subClasses.put(name, node);
         }
 
-        public void addSubClass(String name, TreeNode node) {
-            this.subClasses.put(name, node);
+        public TreeNode getNode(String name) {
+            return subClasses.get(name);
+        }
+
+        public boolean hasNode(String name) {
+            return subClasses.containsKey(name);
         }
 
         @Override

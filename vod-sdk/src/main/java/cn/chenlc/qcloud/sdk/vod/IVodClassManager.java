@@ -18,7 +18,7 @@ package cn.chenlc.qcloud.sdk.vod;
 
 import cn.chenlc.qcloud.sdk.common.exceptions.QcloudSdkException;
 import cn.chenlc.qcloud.sdk.vod.vo.VodClassSimpleInfo;
-import cn.chenlc.qcloud.sdk.vod.vo.VodClassTree;
+import cn.chenlc.qcloud.sdk.vod.vo.VodClassTreeMap;
 
 import java.util.List;
 
@@ -39,7 +39,7 @@ public interface IVodClassManager {
      * @return 新创建的分类的ID
      * @throws QcloudSdkException 请求失败时抛出
      */
-    String createClass(String className, Integer parentId) throws QcloudSdkException;
+    int createClass(String className, Integer parentId) throws QcloudSdkException;
 
     /**
      * 获取全部分类信息
@@ -47,7 +47,7 @@ public interface IVodClassManager {
      * @return 全部分类信息的树形结构
      * @throws QcloudSdkException 获取出错时抛出
      */
-    VodClassTree describeAllClass() throws QcloudSdkException;
+    VodClassTreeMap describeAllClass() throws QcloudSdkException;
 
     /**
      * 获取全局分类列表

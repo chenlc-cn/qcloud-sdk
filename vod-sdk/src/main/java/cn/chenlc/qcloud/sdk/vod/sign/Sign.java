@@ -76,7 +76,7 @@ public class Sign {
             }
             String key = keyNames[i];
             String value = params.get(key);
-            paramsForSign.append(key).append("=").append(value.replace('_', '.'));
+            paramsForSign.append(key).append("=").append(value);
         }
 
         return method.name() +
