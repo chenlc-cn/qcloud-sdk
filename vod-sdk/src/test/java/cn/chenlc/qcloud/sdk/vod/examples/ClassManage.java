@@ -16,11 +16,18 @@
 
 package cn.chenlc.qcloud.sdk.vod.examples;
 
+import cn.chenlc.qcloud.sdk.common.consts.Region;
+import cn.chenlc.qcloud.sdk.common.http.ClientConfig;
+import cn.chenlc.qcloud.sdk.common.sign.Credential;
 import cn.chenlc.qcloud.sdk.vod.VodClient;
+import cn.chenlc.qcloud.sdk.vod.vo.UploadSuccessResponse;
 import cn.chenlc.qcloud.sdk.vod.vo.VodClassTreeMap;
 import cn.chenlc.qcloud.sdk.vod.vo.VodFileInfo;
+import cn.chenlc.qcloud.sdk.vod.vo.VodFilePlayInfo;
 import com.alibaba.fastjson.JSON;
+import org.apache.commons.lang3.RandomStringUtils;
 
+import java.io.File;
 import java.util.List;
 
 /**
@@ -36,8 +43,18 @@ public class ClassManage {
         String secretId = "AKID2zkNq9TNDqMk3uFQRIzVwFLFzXs1ZXYN";
         String secretKey = "mPtBGLF1b0FI9QZXJvMbeV0Tluq041nU";
 
-        VodClient vodClient = new VodClient(appId, secretId, secretKey);
+        ClientConfig clientConfig = new ClientConfig();
+        clientConfig.setRegion(Region.BEI_JING);
+        VodClient vodClient = new VodClient(clientConfig, new Credential(appId, secretId, secretKey));
 
-        List<VodFileInfo> infos = vodClient.describeRecordPlayInfo("200036920_1d96a669ae114e5680c8bb786efa3356");
+        File file = new File("/Users/chenlichao/work/16lao/qingsu/资料/晓燕登山网页/video/video0.mp4");
+
+        UploadSuccessResponse response = vodClient.uploadVodFile(file);
+
+        System.out.println("id: " + response.getFileId());
+        System.out.println("url: " + response.getUrl());
+
+        vodClient.describeClass();
+
     }
 }

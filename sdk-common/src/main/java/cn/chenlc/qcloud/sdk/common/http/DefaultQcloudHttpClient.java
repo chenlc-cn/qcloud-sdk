@@ -21,7 +21,9 @@ import cn.chenlc.qcloud.sdk.common.exceptions.ParamException;
 import cn.chenlc.qcloud.sdk.common.exceptions.QcloudSdkException;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
+import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
@@ -48,9 +50,56 @@ public class DefaultQcloudHttpClient extends QcloudHttpClient {
     }
 
     @Override
-    protected String sendPostRequest(HttpRequest httpRequest) throws QcloudSdkException {
-        String url = httpRequest.getUrl();
-        return null;
+    protected String sendPostRequest(HttpRequest request) throws QcloudSdkException {
+        LOGGER.debug("Execute POST request ...");
+        String url = request.getUrl();
+        HttpPost httpPost;
+        String responseString = "";
+
+        int retry = 0;
+        int maxRetries = this.clientConfig.getMaxRetries();
+        while (retry < maxRetries) {
+            try {
+                URIBuilder uriBuilder = new URIBuilder(url);
+                Map<String, String> params = request.getQueryParams();
+                for (String key : params.keySet()) {
+                    uriBuilder.addParameter(key, params.get(key));
+                }
+                URI uriWithParams = uriBuilder.build();
+                LOGGER.debug("POST {}", uriWithParams);
+                httpPost = new HttpPost(uriWithParams);
+            } catch (URISyntaxException e) {
+                throw new ParamException("Invalid url: " + url);
+            }
+
+            httpPost.setConfig(requestConfig);
+            setHeaders(httpPost, request.getHeaders());
+            httpPost.setEntity(request.getBody());
+
+            //noinspection Duplicates
+            try {
+                HttpResponse response = httpClient.execute(httpPost);
+                StatusLine statusLine = response.getStatusLine();
+                LOGGER.debug("Server response: {} {} {}", statusLine.getProtocolVersion(), statusLine.getStatusCode(), statusLine.getReasonPhrase());
+                int statusCode = statusLine.getStatusCode();
+                if (statusCode == 200 || statusCode == 400 || (statusCode > 200 && statusCode < 300)) {
+                    responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+                    LOGGER.debug("Response Body: {}", responseString);
+                    return responseString;
+                } else {
+                    String errMsg = getErrorHttpResponseMsg(request, statusLine);
+                    throw new ParamException(errMsg);
+                }
+            } catch (IOException e) {
+                retry++;
+                if (retry == maxRetries) {
+                    throw new NetworkException("HttpRequest: " + request + "\nException: " + e);
+                }
+            } finally {
+                httpPost.releaseConnection();
+            }
+        }
+        return responseString;
     }
 
     @Override
@@ -60,12 +109,12 @@ public class DefaultQcloudHttpClient extends QcloudHttpClient {
         HttpGet httpGet;
         String responseString = "";
         int retry = 0;
-        int maxRetryCount = this.clientConfig.getMaxRetries();
+        int maxRetries = this.clientConfig.getMaxRetries();
 
-        while (retry < maxRetryCount) {
+        while (retry < maxRetries) {
             try {
                 URIBuilder uriBuilder = new URIBuilder(url);
-                Map<String, String> params = request.getParams();
+                Map<String, String> params = request.getQueryParams();
                 for (String key : params.keySet()) {
                     uriBuilder.addParameter(key, params.get(key));
                 }
@@ -79,6 +128,7 @@ public class DefaultQcloudHttpClient extends QcloudHttpClient {
             httpGet.setConfig(this.requestConfig);
             setHeaders(httpGet, request.getHeaders());
 
+            //noinspection Duplicates
             try {
                 HttpResponse response = httpClient.execute(httpGet);
                 StatusLine statusLine = response.getStatusLine();
@@ -94,7 +144,7 @@ public class DefaultQcloudHttpClient extends QcloudHttpClient {
                 }
             } catch (IOException e) {
                 retry++;
-                if (retry == maxRetryCount) {
+                if (retry == maxRetries) {
                     throw new NetworkException("HttpRequeest: " + request + "\nException: " + e);
                 }
             } finally {

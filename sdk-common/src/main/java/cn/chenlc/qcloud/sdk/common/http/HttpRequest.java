@@ -16,6 +16,8 @@
 
 package cn.chenlc.qcloud.sdk.common.http;
 
+import org.apache.http.HttpEntity;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -33,7 +35,10 @@ public class HttpRequest {
     private HttpContentType contentType = HttpContentType.APPLICATION_JSON;
 
     private Map<String, String> headers = new LinkedHashMap<>();
-    private Map<String, String> params = new LinkedHashMap<>();
+    private Map<String, String> queryParams = new LinkedHashMap<>();
+
+    private HttpEntity body;
+//    private byte[] body;
 
     public String getUrl() {
         return url;
@@ -76,18 +81,26 @@ public class HttpRequest {
         return this;
     }
 
-    public Map<String, String> getParams() {
-        return params;
+    public Map<String, String> getQueryParams() {
+        return queryParams;
     }
 
-    public HttpRequest setParams(Map<String, String> params) {
-        this.params = params;
+    public HttpRequest setQueryParams(Map<String, String> queryParams) {
+        this.queryParams = queryParams;
         return this;
     }
 
-    public HttpRequest addParam(String key, String value) {
-        this.params.put(key, value);
+    public HttpRequest addQueryParam(String key, String value) {
+        this.queryParams.put(key, value);
         return this;
+    }
+
+    public HttpEntity getBody() {
+        return body;
+    }
+
+    public void setBody(HttpEntity body) {
+        this.body = body;
     }
 
     @Override
@@ -103,8 +116,8 @@ public class HttpRequest {
             sb.append("\n");
         }
 
-        sb.append("params:\n");
-        for (Map.Entry<String, String> entry : params.entrySet()) {
+        sb.append("queryParams:\n");
+        for (Map.Entry<String, String> entry : queryParams.entrySet()) {
             sb.append("key:").append(entry.getKey());
             sb.append(", value:").append(entry.getValue());
             sb.append("\n");

@@ -22,6 +22,8 @@ import cn.chenlc.qcloud.sdk.vod.ParamKeys;
 import cn.chenlc.qcloud.sdk.vod.VodConstants;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.digest.HmacUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -35,6 +37,8 @@ import java.util.Map;
  */
 public class Sign {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(Sign.class);
+
     private static final String HMAC_SHA256 = "HmacSHA256";
 
     /**
@@ -47,7 +51,24 @@ public class Sign {
      */
     public static String sign(Credential credential, HttpMethod method,
                               Map<String, String> params) {
-        String forSign = generateStringForSign(credential, method, VodConstants.REQUEST_HOST, VodConstants.REQUEST_PATH, params);
+        return sign(credential, method, VodConstants.REQUEST_HOST, VodConstants.REQUEST_PATH, params);
+    }
+
+    /**
+     * 点播服务签名， 当参数列表中，SignatureMethod参数指定为"HmacSHA256"时， 采用HMAC_SHA256算法签名
+     *
+     * @param credential 安全访问凭证
+     * @param method HTTP请求方法， POST或GET
+     * @param requestHost 请求的域名
+     * @param requestPath 请求的路径
+     * @param params 参数列表
+     * @return 签名字符串
+     */
+    public static String sign(Credential credential, HttpMethod method,
+                              String requestHost, String requestPath,
+                              Map<String, String> params) {
+        String forSign = generateStringForSign(credential, method, requestHost, requestPath, params);
+        LOGGER.debug("String for sign: {}", forSign);
         byte[] signedBytes;
         if (HMAC_SHA256.equals(params.get(ParamKeys.SIGNATURE_METHOD_KEY))) {
             signedBytes = HmacUtils.hmacSha256(credential.getSecretKey(), forSign);

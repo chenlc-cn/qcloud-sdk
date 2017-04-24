@@ -16,6 +16,7 @@
 
 package cn.chenlc.qcloud.sdk.vod.operators;
 
+import cn.chenlc.qcloud.sdk.common.consts.Region;
 import cn.chenlc.qcloud.sdk.common.http.QcloudHttpClient;
 import cn.chenlc.qcloud.sdk.common.sign.Credential;
 import cn.chenlc.qcloud.sdk.vod.ParamKeys;
@@ -45,11 +46,11 @@ abstract class AbstractOperator {
         this.httpClient = httpClient;
     }
 
-    protected Map<String, String> genCommonParams(String action, String region) {
+    protected Map<String, String> genCommonParams(String action, Region region) {
         Map<String, String> params = new LinkedHashMap<>();
         params.put(ParamKeys.ACTION_KEY, action);
-        if (StringUtils.isNotBlank(region)) {
-            params.put(ParamKeys.REGION_KEY, region);
+        if (region != null) {
+            params.put(ParamKeys.REGION_KEY, region.getValue());
         }
         params.put(ParamKeys.TIMESTAMP_KEY, String.valueOf(System.currentTimeMillis() / 1000));
         params.put(ParamKeys.NONCE_KEY, integerNonce());
@@ -58,6 +59,6 @@ abstract class AbstractOperator {
     }
 
     protected String integerNonce() {
-        return RandomStringUtils.randomAlphanumeric(8);
+        return RandomStringUtils.randomNumeric(6, 10);
     }
 }

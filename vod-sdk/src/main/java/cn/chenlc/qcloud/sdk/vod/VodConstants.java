@@ -25,7 +25,17 @@ package cn.chenlc.qcloud.sdk.vod;
  */
 public class VodConstants {
 
+    /** 点播服务接口，默认请求域名 */
     public static final String REQUEST_HOST = "vod.api.qcloud.com";
+    /** 点播服务接口，默认请求路径 */
     public static final String REQUEST_PATH = "/v2/index.php";
+    /** 点播服务接口，默认请求URL */
     public static final String REQUEST_URL = "https://vod.api.qcloud.com/v2/index.php";
+
+    /** 点播服务，视频上传接口请求的域名 */
+    public static final String UPLOAD_REQUEST_HOST = "vod2.qcloud.com";
+    /** 点播服务，视频上传接口请求的路径 */
+    public static final String UPLOAD_REQUEST_PATH = "/v2/index.php";
+    /** 点播服务，视频上传接口请求的URL */
+    public static final String UPLOAD_REQUEST_URL = "https://vod2.qcloud.com/v2/index.php";
 }

@@ -16,6 +16,7 @@
 
 package cn.chenlc.qcloud.sdk.common.http;
 
+import cn.chenlc.qcloud.sdk.common.consts.Region;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,6 +57,7 @@ public class ClientConfig {
     private int connectionMaxIdleTime = DEFAULT_MAX_IDLE_TIME;
     private int maxRetries = DEFAULT_MAX_RETRIES;
     private String userAgent = DEFAULT_USER_AGENT;
+    private Region region;
 
     public int getMaxConnectionCount() {
         return maxConnectionCount;
@@ -127,5 +129,13 @@ public class ClientConfig {
     public ClientConfig setUserAgent(String userAgent) {
         this.userAgent = userAgent;
         return this;
+    }
+
+    public Region getRegion() {
+        return region;
+    }
+
+    public void setRegion(Region region) {
+        this.region = region;
     }
 }

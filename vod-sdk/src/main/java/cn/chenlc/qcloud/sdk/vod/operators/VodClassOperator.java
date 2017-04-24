@@ -16,6 +16,7 @@
 
 package cn.chenlc.qcloud.sdk.vod.operators;
 
+import cn.chenlc.qcloud.sdk.common.consts.Region;
 import cn.chenlc.qcloud.sdk.common.exceptions.ParamException;
 import cn.chenlc.qcloud.sdk.common.exceptions.QcloudSdkException;
 import cn.chenlc.qcloud.sdk.common.exceptions.ServerException;
@@ -87,8 +88,11 @@ public class VodClassOperator extends AbstractOperator implements IVodClassManag
         private static final String INPUT_CLASS_ID = "classId";
     }
 
+    private Region region;
+
     public VodClassOperator(Credential credential, QcloudHttpClient httpClient) {
         super(credential, httpClient);
+        this.region = httpClient.getClientConfig().getRegion();
     }
 
     @Override
@@ -96,7 +100,7 @@ public class VodClassOperator extends AbstractOperator implements IVodClassManag
         if (StringUtils.isBlank(className)) {
             throw new IllegalArgumentException("className is empty");
         }
-        Map<String, String> params = genCommonParams(CREATE_CLASS.ACTION, null);
+        Map<String, String> params = genCommonParams(CREATE_CLASS.ACTION, region);
         params.put(CREATE_CLASS.INPUT_CLASS_NAME, className);
         if (parentId != null) {
             params.put(CREATE_CLASS.INPUT_PARENT_ID, parentId.toString());
@@ -104,7 +108,7 @@ public class VodClassOperator extends AbstractOperator implements IVodClassManag
         params.put(ParamKeys.SIGNATURE_KEY, Sign.sign(credential, HttpMethod.GET, params));
 
         HttpRequest request = new HttpRequest();
-        request.setUrl(VodConstants.REQUEST_URL).setMethod(HttpMethod.GET).setParams(params);
+        request.setUrl(VodConstants.REQUEST_URL).setMethod(HttpMethod.GET).setQueryParams(params);
 
         String resJsonString = httpClient.sendHttpRequest(request);
         JSONObject resJson = JSON.parseObject(resJsonString);
@@ -117,11 +121,11 @@ public class VodClassOperator extends AbstractOperator implements IVodClassManag
 
     @Override
     public VodClassTreeMap describeAllClass() throws QcloudSdkException {
-        Map<String, String> params = genCommonParams(DESCRIBE_ALL_CLASS.ACTION, null);
+        Map<String, String> params = genCommonParams(DESCRIBE_ALL_CLASS.ACTION, region);
         params.put(ParamKeys.SIGNATURE_KEY, Sign.sign(credential, HttpMethod.GET, params));
 
         HttpRequest request = new HttpRequest();
-        request.setUrl(VodConstants.REQUEST_URL).setMethod(HttpMethod.GET).setParams(params);
+        request.setUrl(VodConstants.REQUEST_URL).setMethod(HttpMethod.GET).setQueryParams(params);
 
         String resJsonString = httpClient.sendHttpRequest(request);
         JSONObject resJson = JSON.parseObject(resJsonString);
@@ -166,11 +170,11 @@ public class VodClassOperator extends AbstractOperator implements IVodClassManag
 
     @Override
     public List<VodClassSimpleInfo> describeClass() throws QcloudSdkException {
-        Map<String, String> params = genCommonParams(DESCRIBE_CLASS.ACTION, null);
+        Map<String, String> params = genCommonParams(DESCRIBE_CLASS.ACTION, region);
         params.put(ParamKeys.SIGNATURE_KEY, Sign.sign(credential, HttpMethod.GET, params));
 
         HttpRequest request = new HttpRequest();
-        request.setUrl(VodConstants.REQUEST_URL).setMethod(HttpMethod.GET).setParams(params);
+        request.setUrl(VodConstants.REQUEST_URL).setMethod(HttpMethod.GET).setQueryParams(params);
 
         String resJsonString = httpClient.sendHttpRequest(request);
         JSONObject resJson = JSON.parseObject(resJsonString);
@@ -198,13 +202,13 @@ public class VodClassOperator extends AbstractOperator implements IVodClassManag
         if (classId == null || StringUtils.isBlank(newClassName)) {
             throw new ParamException("classId or newClassName is empty!");
         }
-        Map<String, String> params = genCommonParams(MODIFY_CLASS.ACTION, null);
+        Map<String, String> params = genCommonParams(MODIFY_CLASS.ACTION, region);
         params.put(MODIFY_CLASS.INPUT_CLASS_ID, classId.toString());
         params.put(MODIFY_CLASS.INPUT_NEW_CLASS_NAME, newClassName);
         params.put(ParamKeys.SIGNATURE_KEY, Sign.sign(credential, HttpMethod.GET, params));
 
         HttpRequest request = new HttpRequest();
-        request.setUrl(VodConstants.REQUEST_URL).setMethod(HttpMethod.GET).setParams(params);
+        request.setUrl(VodConstants.REQUEST_URL).setMethod(HttpMethod.GET).setQueryParams(params);
 
         String resJsonString = httpClient.sendHttpRequest(request);
         JSONObject resJson = JSON.parseObject(resJsonString);
@@ -219,12 +223,12 @@ public class VodClassOperator extends AbstractOperator implements IVodClassManag
         if (classId == null) {
             throw new ParamException("classId is null!");
         }
-        Map<String, String> params = genCommonParams(DELETE_CLASS.ACTION, null);
+        Map<String, String> params = genCommonParams(DELETE_CLASS.ACTION, region);
         params.put(DELETE_CLASS.INPUT_CLASS_ID, classId.toString());
         params.put(ParamKeys.SIGNATURE_KEY, Sign.sign(credential, HttpMethod.GET, params));
 
         HttpRequest request = new HttpRequest();
-        request.setUrl(VodConstants.REQUEST_URL).setMethod(HttpMethod.GET).setParams(params);
+        request.setUrl(VodConstants.REQUEST_URL).setMethod(HttpMethod.GET).setQueryParams(params);
 
         String resJsonString = httpClient.sendHttpRequest(request);
         JSONObject resJson = JSON.parseObject(resJsonString);

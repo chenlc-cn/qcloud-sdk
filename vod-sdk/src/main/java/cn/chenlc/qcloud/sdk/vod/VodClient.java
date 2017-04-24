@@ -23,6 +23,7 @@ import cn.chenlc.qcloud.sdk.common.http.*;
 import cn.chenlc.qcloud.sdk.common.sign.Credential;
 import cn.chenlc.qcloud.sdk.vod.operators.VodClassOperator;
 import cn.chenlc.qcloud.sdk.vod.operators.VodManagerOperator;
+import cn.chenlc.qcloud.sdk.vod.operators.VodUploadOperator;
 import cn.chenlc.qcloud.sdk.vod.sign.Sign;
 import cn.chenlc.qcloud.sdk.vod.vo.*;
 import com.alibaba.fastjson.JSON;
@@ -31,6 +32,8 @@ import com.alibaba.fastjson.JSONObject;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -43,13 +46,14 @@ import java.util.Map;
  * @version 1.0
  * @since 2017/4/15
  */
-public class VodClient implements IVodClassManager, IVod1_0Compatibility, IVodManager{
+public class VodClient implements IVodClassManager, IVod1_0Compatibility, IVodManager, IVodUpload{
 
     private final Credential credential;
     private final QcloudHttpClient httpClient;
 
     private IVodClassManager classOperator;
     private IVodManager vodManager;
+    private IVodUpload vodUploader;
 
     public VodClient(int appId, String secretId, String secretKey) {
         this(new ClientConfig(), new Credential(appId, secretId, secretKey));
@@ -64,6 +68,7 @@ public class VodClient implements IVodClassManager, IVod1_0Compatibility, IVodMa
         this.httpClient = httpClient;
         this.classOperator = new VodClassOperator(credential, httpClient);
         this.vodManager = new VodManagerOperator(credential, httpClient);
+        this.vodUploader = new VodUploadOperator(credential, httpClient);
     }
 
     @Override
@@ -137,6 +142,45 @@ public class VodClient implements IVodClassManager, IVod1_0Compatibility, IVodMa
         vodManager.describeVodCover(fileId, type, snapshotUrl);
     }
 
+    // 视频上传
+    @Override
+    public UploadInitResponse initUpload(String fileName, String fileSha, long fileSize, long dataSize, String fileType) throws QcloudSdkException {
+        return initUpload(fileName, fileSha, fileSize, dataSize, fileType, null);
+    }
+    @Override
+    public UploadInitResponse initUpload(String fileName, String fileSha, long fileSize, long dataSize, String fileType, UploadOptionalParams optionalParams) throws QcloudSdkException {
+        return vodUploader.initUpload(fileName, fileSha, fileSize, dataSize, fileType, optionalParams);
+    }
+
+    @Override
+    public void uploadPart(String fileSha, long offset, long dataSize, String dataMd5, byte[] data) throws QcloudSdkException {
+        vodUploader.uploadPart(fileSha, offset, dataSize, dataMd5, data);
+    }
+
+    @Override
+    public UploadSuccessResponse finishUpload(String fileSha) throws QcloudSdkException {
+        return vodUploader.finishUpload(fileSha);
+    }
+
+    @Override
+    public UploadSuccessResponse smallFileUpload(String fileName, String fileSha, long fileSize, String fileType, String vodFileId, byte[] data) throws QcloudSdkException {
+        return vodUploader.smallFileUpload(fileName, fileSha, fileSize, fileType, vodFileId, data);
+    }
+
+    @Override
+    public UploadSuccessResponse uploadVodFile(File file) throws IOException, QcloudSdkException {
+        return uploadVodFile(file, null);
+    }
+
+    @Override
+    public UploadSuccessResponse uploadVodFile(File file, UploadOptionalParams optionalParams) throws IOException, QcloudSdkException {
+        return vodUploader.uploadVodFile(file, optionalParams);
+    }
+
+    @Override
+    public UploadSuccessResponse uploadVodFile(File file, String fileType, UploadOptionalParams optionalParams) throws IOException, QcloudSdkException {
+        return vodUploader.uploadVodFile(file, fileType, optionalParams);
+    }
 
     private static final class DESCRIBE_RECORD_PLAY_INFO {
         private static final String ACTION = "DescribeRecordPlayInfo";
@@ -176,7 +220,7 @@ public class VodClient implements IVodClassManager, IVod1_0Compatibility, IVodMa
         params.put(ParamKeys.SIGNATURE_KEY, Sign.sign(credential, HttpMethod.GET, params));
 
         HttpRequest request = new HttpRequest();
-        request.setUrl(VodConstants.REQUEST_URL).setMethod(HttpMethod.GET).setParams(params);
+        request.setUrl(VodConstants.REQUEST_URL).setMethod(HttpMethod.GET).setQueryParams(params);
 
         String resJsonString = httpClient.sendHttpRequest(request);
         JSONObject resJson = JSON.parseObject(resJsonString);

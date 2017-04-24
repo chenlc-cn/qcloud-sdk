@@ -16,6 +16,7 @@
 
 package cn.chenlc.qcloud.sdk.vod.operators;
 
+import cn.chenlc.qcloud.sdk.common.consts.Region;
 import cn.chenlc.qcloud.sdk.common.exceptions.QcloudSdkException;
 import cn.chenlc.qcloud.sdk.common.exceptions.ServerException;
 import cn.chenlc.qcloud.sdk.common.http.HttpMethod;
@@ -37,7 +38,6 @@ import com.alibaba.fastjson.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 
 /**
  * 点播服务，视频管理操作实现
@@ -64,18 +64,21 @@ public class VodManagerOperator extends AbstractOperator implements IVodManager{
         private static final String INPUT_FILE_ID = "fileId";
     }
 
+    private Region region;
+
     public VodManagerOperator(Credential credential, QcloudHttpClient httpClient) {
         super(credential, httpClient);
+        this.region = httpClient.getClientConfig().getRegion();
     }
 
     @Override
     public List<VodFilePlayInfo> describeVodPlayUrls(String fileId) throws QcloudSdkException {
-        Map<String, String> params = genCommonParams(DESCRIBE_VOD_PLAY_URLS.ACTION, null);
+        Map<String, String> params = genCommonParams(DESCRIBE_VOD_PLAY_URLS.ACTION, region);
         params.put(DESCRIBE_VOD_PLAY_URLS.INPUT_FILE_ID, fileId);
         params.put(ParamKeys.SIGNATURE_KEY, Sign.sign(credential, HttpMethod.GET, params));
 
         HttpRequest request = new HttpRequest();
-        request.setUrl(VodConstants.REQUEST_URL).setMethod(HttpMethod.GET).setParams(params);
+        request.setUrl(VodConstants.REQUEST_URL).setMethod(HttpMethod.GET).setQueryParams(params);
 
         String resJsonString = httpClient.sendHttpRequest(request);
         JSONObject resJson = JSON.parseObject(resJsonString);
@@ -127,7 +130,7 @@ public class VodManagerOperator extends AbstractOperator implements IVodManager{
 
     @Override
     public void modifyVodInfo(String fileId, NamedParamPair... modifyParams) throws QcloudSdkException {
-        Map<String, String> params = genCommonParams(MODIFY_VOD_INFO.ACTION, null);
+        Map<String, String> params = genCommonParams(MODIFY_VOD_INFO.ACTION, region);
         params.put(MODIFY_VOD_INFO.INPUT_FILE_ID, fileId);
         for (NamedParamPair p : modifyParams) {
             params.put(p.getKey(), p.getValue());
@@ -135,7 +138,7 @@ public class VodManagerOperator extends AbstractOperator implements IVodManager{
         params.put(ParamKeys.SIGNATURE_KEY, Sign.sign(credential, HttpMethod.GET, params));
 
         HttpRequest request = new HttpRequest();
-        request.setUrl(VodConstants.REQUEST_URL).setMethod(HttpMethod.GET).setParams(params);
+        request.setUrl(VodConstants.REQUEST_URL).setMethod(HttpMethod.GET).setQueryParams(params);
 
         String resJsonString = httpClient.sendHttpRequest(request);
         JSONObject resJson = JSON.parseObject(resJsonString);
