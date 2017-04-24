@@ -39,22 +39,7 @@ public class ClassManage {
 
     public static void main(String[] args) throws Exception {
 
-        int appId = 1252719796;
-        String secretId = "AKID2zkNq9TNDqMk3uFQRIzVwFLFzXs1ZXYN";
-        String secretKey = "mPtBGLF1b0FI9QZXJvMbeV0Tluq041nU";
 
-        ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setRegion(Region.BEI_JING);
-        VodClient vodClient = new VodClient(clientConfig, new Credential(appId, secretId, secretKey));
-
-        File file = new File("/Users/chenlichao/work/16lao/qingsu/资料/晓燕登山网页/video/video0.mp4");
-
-        UploadSuccessResponse response = vodClient.uploadVodFile(file);
-
-        System.out.println("id: " + response.getFileId());
-        System.out.println("url: " + response.getUrl());
-
-        vodClient.describeClass();
 
     }
 }
