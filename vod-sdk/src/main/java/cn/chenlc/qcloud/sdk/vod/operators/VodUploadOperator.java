@@ -34,7 +34,10 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.message.BasicNameValuePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,8 +45,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
@@ -72,21 +74,24 @@ public class VodUploadOperator extends AbstractOperator implements IVodUpload {
         private static final String OFFSET = "offset";
         private static final String DATA_MD5 = "dataMd5";
         private static final String URL = "url";
+        private static final String TAGS_PREFIX = "tags";
+        private static final String CLASS_ID = "classId";
+        private static final String IS_TRANSCODE = "isTranscode";
+        private static final String IS_SCREENSHOT = "isScreenshot";
+        private static final String IS_WATERMARK = "isWatermark";
 
         private static final String VALUE_TRUE = "1";
-        //private static final String VALUE_FALSE = "0";
+//        private static final String VALUE_FALSE = "0";
     }
 
     /** 上传初始化, 相关字段名 */
     private static final class INIT_UPLOAD {
         private static final String ACTION = "InitUpload";
-        private static final String INPUT_TAGS_PREFIX = "tags.";
-        private static final String INPUT_CLASS_ID = "classId";
-        private static final String INPUT_IS_TRANSCODE = "isTranscode";
-        private static final String INPUT_IS_SCREENSHOT = "isScreenshot";
-        private static final String INPUT_IS_WATERMARK = "isWatermark";
+
+        private static final String INPUT_STORE_TIME = "storeTime";
 
         private static final String OUTPUT_LIST_PARTS = "listParts";
+        private static final String OUTPUT_DATA_LENGTH = "dataLen";
     }
     /** 分片上传，相关字段名 */
     private static final class UPLOAD_PART {
@@ -102,9 +107,17 @@ public class VodUploadOperator extends AbstractOperator implements IVodUpload {
         private static final String INPUT_EXTRA_USAGE = "extra.usage";
         private static final String INPUT_EXTRA_FILE_ID = "extra.fileId";
     }
+    /** URL拉取视频上传 */
+    private static final class MULTI_PULL_VOD_FILE {
+        private static final String ACTION = "MultiPullVodFile";
+        private static final String INPUT_PREFIX = "pullset";
+        private static final String INPUT_FILE_MD5 = "fileMd5";
+        private static final String INPUT_PRIORITY = "priority";
+    }
 
     /** 默认分片大小 */
-    private static final int DEFAULT_DATA_SIZE = 1048576;
+    private static final int DEFAULT_DATA_SIZE = 524288;
+//    private static final int DEFAULT_DATA_SIZE = 1048576;
 
     private Region region;
 
@@ -119,40 +132,44 @@ public class VodUploadOperator extends AbstractOperator implements IVodUpload {
     }
 
     @Override
-    public UploadInitResponse initUpload(String fileName, String fileSha, long fileSize, long dataSize, String fileType, UploadOptionalParams optionalParams) throws QcloudSdkException {
+    public UploadInitResponse initUpload(String fileName, String fileSha, long fileSize, long dataSize, String fileType, UploadOptionalParams ops) throws QcloudSdkException {
         Map<String, String> params = genCommonParams(INIT_UPLOAD.ACTION, region);
         params.put(COMMON_KEYS.FILE_NAME, fileName);
         params.put(COMMON_KEYS.FILE_SHA, fileSha);
         params.put(COMMON_KEYS.FILE_SIZE, String.valueOf(fileSize));
         params.put(COMMON_KEYS.DATA_SIZE, String.valueOf(dataSize));
         params.put(COMMON_KEYS.FILE_TYPE, fileType);
-        // 处理可选参数
-        if (optionalParams != null) {
-            if (optionalParams.getClassId() != null) {
-                params.put(INIT_UPLOAD.INPUT_CLASS_ID, optionalParams.getClassId().toString());
-            }
-            if (Boolean.TRUE.equals(optionalParams.getIsTranscode())) {
-                params.put(INIT_UPLOAD.INPUT_IS_TRANSCODE, COMMON_KEYS.VALUE_TRUE);
-            }
-            if (Boolean.TRUE.equals(optionalParams.getIsScreenshot())) {
-                params.put(INIT_UPLOAD.INPUT_IS_SCREENSHOT, COMMON_KEYS.VALUE_TRUE);
-            }
-            if (Boolean.TRUE.equals(optionalParams.getIsWatermark())) {
-                params.put(INIT_UPLOAD.INPUT_IS_WATERMARK, COMMON_KEYS.VALUE_TRUE);
-            }
 
-            int i = 1;
-            for (String tag : optionalParams.getTags()) {
-                params.put(INIT_UPLOAD.INPUT_TAGS_PREFIX + i, tag);
-                i++;
+        // 处理可选参数
+        if (ops != null) {
+            if (ops.getClassId() != null) {
+                params.put(COMMON_KEYS.CLASS_ID, ops.getClassId().toString());
+            }
+            if (Boolean.TRUE.equals(ops.getIsTranscode())) {
+                params.put(COMMON_KEYS.IS_TRANSCODE, COMMON_KEYS.VALUE_TRUE);
+            }
+            if (Boolean.TRUE.equals(ops.getIsScreenshot())) {
+                params.put(COMMON_KEYS.IS_SCREENSHOT, COMMON_KEYS.VALUE_TRUE);
+            }
+            if (Boolean.TRUE.equals(ops.getIsWatermark())) {
+                params.put(COMMON_KEYS.IS_WATERMARK, COMMON_KEYS.VALUE_TRUE);
+            }
+            if (ops.getStoreTime() != null) {
+                params.put(INIT_UPLOAD.INPUT_STORE_TIME, ops.getStoreTime().toString());
+            }
+            int tagIndex = 1;
+            for (String tag : ops.getTags()) {
+                params.put(COMMON_KEYS.TAGS_PREFIX + "." + tagIndex, tag);
+                tagIndex++;
             }
         }
+
         // 签名
-        params.put(ParamKeys.SIGNATURE_KEY, sign(HttpMethod.GET, params));
+        params.put(ParamKeys.SIGNATURE_KEY, sign(HttpMethod.POST, params));
 
         HttpRequest request = new HttpRequest();
         request.setUrl(VodConstants.UPLOAD_REQUEST_URL)
-                .setMethod(HttpMethod.GET)
+                .setMethod(HttpMethod.POST)
                 .setQueryParams(params);
 
         int retry = 0;
@@ -189,7 +206,7 @@ public class VodUploadOperator extends AbstractOperator implements IVodUpload {
                         JSONObject part = partList.getJSONObject(i);
                         parts.add(new UploadInitResponse.PartInfo(
                                 part.getLongValue(COMMON_KEYS.OFFSET),
-                                part.getLongValue(COMMON_KEYS.DATA_SIZE),
+                                part.getLongValue(INIT_UPLOAD.OUTPUT_DATA_LENGTH),
                                 part.getString(COMMON_KEYS.DATA_MD5)
                         ));
                     }
@@ -250,10 +267,10 @@ public class VodUploadOperator extends AbstractOperator implements IVodUpload {
     public UploadSuccessResponse finishUpload(String fileSha) throws QcloudSdkException {
         Map<String, String> params = genCommonParams(FINISH_UPLOAD.ACTION, region);
         params.put(COMMON_KEYS.FILE_SHA, fileSha);
-        params.put(ParamKeys.SIGNATURE_KEY, fileSha);
+        params.put(ParamKeys.SIGNATURE_KEY, sign(HttpMethod.POST, params));
 
         HttpRequest request = new HttpRequest();
-        request.setUrl(VodConstants.UPLOAD_REQUEST_URL).setMethod(HttpMethod.GET).setQueryParams(params);
+        request.setUrl(VodConstants.UPLOAD_REQUEST_URL).setMethod(HttpMethod.POST).setQueryParams(params);
 
         int retry = 0;
         int maxRetries = httpClient.getClientConfig().getMaxRetries();
@@ -356,85 +373,156 @@ public class VodUploadOperator extends AbstractOperator implements IVodUpload {
             throw new ParamException("The file is not normal file.");
         }
 
-        FileInputStream fin = new FileInputStream(file);
-        FileChannel finChannel = fin.getChannel();
-        // 准备上传初始化参数
-        String fileName = file.getName();
-        fileName = fileName.substring(0, fileName.length() - fileType.length() - 1);
-        String fileSha = DigestUtils.sha1Hex(fin);
-        long fileSize = finChannel.size();
+        String fileName = file.getName().substring(0, file.getName().length() - fileType.length() - 1);
+        String fileSha = calcSha1(file);
+        long fileSize = file.length();
 
+        // 上传初始化
         UploadInitResponse initResponse = initUpload(fileName, fileSha, fileSize, DEFAULT_DATA_SIZE, fileType, optionalParams);
         int returnCode = initResponse.getCode();
-        if (returnCode == 0) {
-            // 全新上传
-            ByteBuffer buffer = ByteBuffer.allocate(DEFAULT_DATA_SIZE);
-            long offset = 0;
-            // noinspection Duplicates
-            while (offset < fileSize) {
-                buffer.clear();
-                finChannel.read(buffer);
-                byte[] partData = buffer.array();
-                String partDataMd5 = DigestUtils.md5Hex(partData);
-                uploadPart(fileSha, offset, DEFAULT_DATA_SIZE, partDataMd5, partData);
-                offset += partData.length;
-            }
-        } else if (returnCode == 1) {
-            // 断点续传
-            List<UploadInitResponse.PartInfo> existsPartList = initResponse.getListParts();
-            Collections.sort(existsPartList, new Comparator<UploadInitResponse.PartInfo>() {
-                @Override
-                public int compare(UploadInitResponse.PartInfo o1, UploadInitResponse.PartInfo o2) {
-                    return (int)(o1.getOffset() - o2.getOffset());
-                }
-            });
-
-            ByteBuffer buffer = ByteBuffer.allocate(DEFAULT_DATA_SIZE);
-            int offset = 0;
-            // 遍历已存在的数据块
-            for (UploadInitResponse.PartInfo part : existsPartList) {
-                if (part.getDataSize() != DEFAULT_DATA_SIZE) {
-                    throw new ParamException("Data size of part is different with default data size.");
-                }
-                buffer.clear();
-                finChannel.read(buffer);
-                if (part.getOffset() == offset) {
-                    offset += part.getDataSize();
-                    continue;
-                }
-
-                while (offset < part.getOffset()) {
-                    byte[] partData = buffer.array();
-                    String partDataMd5 = DigestUtils.md5Hex(partData);
-                    uploadPart(fileSha, offset, DEFAULT_DATA_SIZE, partDataMd5, partData);
-                    offset += partData.length;
-                }
-
-                offset += part.getDataSize();
-            }
-            // 上传剩余的数据块
-            //noinspection Duplicates
-            while (offset < fileSize) {
-                buffer.clear();
-                finChannel.read(buffer);
-                byte[] partData = buffer.array();
-                String partDataMd5 = DigestUtils.md5Hex(partData);
-                uploadPart(fileSha, offset, DEFAULT_DATA_SIZE, partDataMd5, partData);
-                offset += partData.length;
-            }
-        } else if (returnCode == 2) {
-            LOGGER.info("文件已上传，fileId: [{}], fileUrl: [{}]", initResponse.getFileId(), initResponse.getUrl());
-            return new UploadSuccessResponse(initResponse.getFileId(), initResponse.getUrl());
-        } else {
+        if (returnCode < 0 || returnCode > 2) {
+            LOGGER.debug("初始化文件上传失败：code = [{}], message = [{}]", returnCode, initResponse.getMessage());
             throw new ServerException(returnCode, initResponse.getMessage());
+        }
+
+        // 开始分片上传
+        try (FileInputStream fin = new FileInputStream(file)) {
+
+            if (returnCode == 0) {
+                // 全新上传
+                byte[] buffer = new byte[DEFAULT_DATA_SIZE];
+                int offset = 0;
+                //noinspection Duplicates
+                while (offset < fileSize) {
+                    int len = fin.read(buffer);
+                    if (len < DEFAULT_DATA_SIZE) {
+                        buffer = Arrays.copyOfRange(buffer, 0, len);
+                    }
+                    uploadPart(fileSha, offset, len, DigestUtils.md5Hex(buffer), buffer);
+                    offset += len;
+                }
+            } else if (returnCode == 1) {
+                // 断点续传
+                int curDataSize = (int)initResponse.getDataSize();
+                List<UploadInitResponse.PartInfo> uploadedParts = initResponse.getListParts();
+                Collections.sort(uploadedParts, new Comparator<UploadInitResponse.PartInfo>() {
+                    @Override
+                    public int compare(UploadInitResponse.PartInfo o1, UploadInitResponse.PartInfo o2) {
+                        return (int)(o1.getOffset() - o2.getOffset());
+                    }
+                });
+
+                byte[] buffer = new byte[curDataSize];
+                long offset = 0;
+                for (UploadInitResponse.PartInfo part : uploadedParts) {
+                    long partOffset = part.getOffset();
+                    long partDataSize = part.getDataSize();
+                    if (partDataSize != curDataSize && partOffset + partDataSize != fileSize) {
+                        throw new ParamException("Data size of part is wrong!");
+                    }
+                    while (offset < partOffset) {
+                        int len = fin.read(buffer);
+                        uploadPart(fileSha, offset, len, DigestUtils.md5Hex(buffer), buffer);
+                        offset += len;
+                    }
+
+                    // 分片已存在
+                    offset += fin.skip(partDataSize);
+                }
+
+                // 上传剩余的连续分片
+                //noinspection Duplicates
+                while (offset < fileSize) {
+                    int len = fin.read(buffer);
+                    if (len < DEFAULT_DATA_SIZE) {
+                        buffer = Arrays.copyOfRange(buffer, 0, len);
+                    }
+                    uploadPart(fileSha, offset, len, DigestUtils.md5Hex(buffer), buffer);
+                    offset += len;
+                }
+            } else if (returnCode == 2) {
+                LOGGER.info("文件已上传，fileId: [{}], fileUrl: [{}]", initResponse.getFileId(), initResponse.getUrl());
+                return new UploadSuccessResponse(initResponse.getFileId(), initResponse.getUrl());
+            }
+
         }
 
         return finishUpload(fileSha);
     }
 
+    @Override
+    public void multiPullVodFile(List<MultiPullParams> pullList) throws QcloudSdkException {
+        if (pullList == null || pullList.size() == 0) {
+            throw new ParamException("pullList is empty!");
+        }
+        Map<String, String> params = genCommonParams(MULTI_PULL_VOD_FILE.ACTION, region);
+        for (int i = 0; i < pullList.size(); i++) {
+            MultiPullParams pp = pullList.get(i);
+            int index = i + 1;
+            params.put(genMultiPullParam(COMMON_KEYS.URL, index), pp.getUrl());
+            params.put(genMultiPullParam(COMMON_KEYS.FILE_NAME, index), pp.getFileName());
+            if (pp.getFileMd5() != null) {
+                params.put(genMultiPullParam(MULTI_PULL_VOD_FILE.INPUT_FILE_MD5, index), pp.getFileMd5());
+            }
+            if (Boolean.TRUE.equals(pp.getIsTranscode())) {
+                params.put(genMultiPullParam(COMMON_KEYS.IS_TRANSCODE, index), COMMON_KEYS.VALUE_TRUE);
+            }
+            if (Boolean.TRUE.equals(pp.getIsScreenshot())) {
+                params.put(genMultiPullParam(COMMON_KEYS.IS_SCREENSHOT, index), COMMON_KEYS.VALUE_TRUE);
+            }
+            if (Boolean.TRUE.equals(pp.getIsWaterMark())) {
+                params.put(genMultiPullParam(COMMON_KEYS.IS_WATERMARK, index), COMMON_KEYS.VALUE_TRUE);
+            }
+            if (pp.getClassId() != null) {
+                params.put(genMultiPullParam(COMMON_KEYS.CLASS_ID, index), pp.getClassId().toString());
+            }
+            if (pp.getTags().size() > 0) {
+                StringBuilder tagBuilder = new StringBuilder();
+                for (String tag : pp.getTags()) {
+                    tagBuilder.append(tag).append(",");
+                }
+                tagBuilder.deleteCharAt(tagBuilder.length() - 1);
+                params.put(genMultiPullParam(COMMON_KEYS.TAGS_PREFIX, index), tagBuilder.toString());
+            }
+            if (pp.getPriority() != null) {
+                params.put(genMultiPullParam(MULTI_PULL_VOD_FILE.INPUT_PRIORITY, index), pp.getPriority().value());
+            }
+        }
+        // 签名
+        params.put(ParamKeys.SIGNATURE_KEY, Sign.sign(credential, HttpMethod.POST, params));
+
+        HttpRequest request = new HttpRequest();
+        request.setUrl(VodConstants.REQUEST_URL).setMethod(HttpMethod.POST);
+        List<NameValuePair> ppList = new ArrayList<>();
+        for (Map.Entry<String, String> entry : params.entrySet()) {
+            ppList.add(new BasicNameValuePair(entry.getKey(), entry.getValue()));
+        }
+        request.setBody(new UrlEncodedFormEntity(ppList, StandardCharsets.UTF_8));
+
+        String resString = httpClient.sendHttpRequest(request);
+        JSONObject resJson = JSON.parseObject(resString);
+        int code = resJson.getIntValue(COMMON_KEYS.CODE);
+        String message = resJson.getString(COMMON_KEYS.MESSAGE);
+        LOGGER.debug("拉取上传结束，返回：code = [{}], message = [{}]", code, message);
+
+        if (code < 0) {
+            throw new ServerException(code, message);
+        }
+    }
+
     private String sign(HttpMethod method, Map<String, String> params) {
-        params.put(ParamKeys.SIGNATURE_METHOD_KEY, "HmacSHA256");
+        //params.put(ParamKeys.SIGNATURE_METHOD_KEY, "HmacSHA256");
         return Sign.sign(credential, method, VodConstants.UPLOAD_REQUEST_HOST,
                 VodConstants.UPLOAD_REQUEST_PATH, params);
+    }
+
+    private String calcSha1(File file) throws IOException {
+        try (FileInputStream fin = new FileInputStream(file)) {
+            return DigestUtils.sha1Hex(fin);
+        }
+    }
+
+    private String genMultiPullParam(String name, int index) {
+        return MULTI_PULL_VOD_FILE.INPUT_PREFIX + "." + index + "." + name;
     }
 }

@@ -1,3 +1,4 @@
 .idea/
 **/target/
 *.iml
+/vod-sdk/src/test/java/example/Main.java

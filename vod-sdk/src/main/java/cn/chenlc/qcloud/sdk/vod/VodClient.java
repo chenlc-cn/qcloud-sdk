@@ -103,7 +103,7 @@ public class VodClient implements IVodClassManager, IVod1_0Compatibility, IVodMa
     }
 
     @Override
-    public void getVideoInfo(String fileId, InfoTypes... infoFilter) throws QcloudSdkException {
+    public void getVideoInfo(String fileId, InfoType... infoFilter) throws QcloudSdkException {
         vodManager.getVideoInfo(fileId, infoFilter);
     }
 
@@ -133,7 +133,7 @@ public class VodClient implements IVodClassManager, IVod1_0Compatibility, IVodMa
     }
 
     @Override
-    public void deleteVodFile(String fileId, int priority) throws QcloudSdkException {
+    public void deleteVodFile(String fileId, DeleteFilePriority priority) throws QcloudSdkException {
         vodManager.deleteVodFile(fileId, priority);
     }
 
@@ -180,6 +180,11 @@ public class VodClient implements IVodClassManager, IVod1_0Compatibility, IVodMa
     @Override
     public UploadSuccessResponse uploadVodFile(File file, String fileType, UploadOptionalParams optionalParams) throws IOException, QcloudSdkException {
         return vodUploader.uploadVodFile(file, fileType, optionalParams);
+    }
+
+    @Override
+    public void multiPullVodFile(List<MultiPullParams> pullList) throws QcloudSdkException {
+        vodUploader.multiPullVodFile(pullList);
     }
 
     private static final class DESCRIBE_RECORD_PLAY_INFO {

@@ -35,7 +35,7 @@ public class VodConstants {
     /** 点播服务，视频上传接口请求的域名 */
     public static final String UPLOAD_REQUEST_HOST = "vod2.qcloud.com";
     /** 点播服务，视频上传接口请求的路径 */
-    public static final String UPLOAD_REQUEST_PATH = "/v2/index.php";
+    public static final String UPLOAD_REQUEST_PATH = "/v3/index.php";
     /** 点播服务，视频上传接口请求的URL */
-    public static final String UPLOAD_REQUEST_URL = "https://vod2.qcloud.com/v2/index.php";
+    public static final String UPLOAD_REQUEST_URL = "https://vod2.qcloud.com/v3/index.php";
 }

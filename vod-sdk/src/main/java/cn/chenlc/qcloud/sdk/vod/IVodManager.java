@@ -35,7 +35,7 @@ public interface IVodManager {
     /**
      * 视频的多种信息类型
      */
-    enum InfoTypes {
+    enum InfoType {
         /** 基础信息 */
         BASIC_INFO("basicInfo"),
         /** 转码结果信息 */
@@ -47,12 +47,26 @@ public interface IVodManager {
 
         private String value;
 
-        InfoTypes(String value) {
+        InfoType(String value) {
             this.value = value;
         }
 
         public String value() {
             return this.value;
+        }
+    }
+
+    enum DeleteFilePriority {
+        MIDDLE("0"), HIGH("1"), LOW("2");
+
+        private final String value;
+
+        DeleteFilePriority(String value) {
+            this.value = value;
+        }
+
+        public String value() {
+            return value;
         }
     }
 
@@ -97,12 +111,12 @@ public interface IVodManager {
      * @param fileId 待获取信息的视频的ID
      * @param infoFilter 指定需要返回的信息，可同时指定多个信息。如果未指定，默认返回所有信息。
      *
-     *                   备选项： {@link InfoTypes#BASIC_INFO BASIC_INFO}, {@link InfoTypes#TRANSCODE_INFO TRANSCODE_INFO},
-     *                   {@link InfoTypes#IMAGE_SPRITE_INFO IMAGE_SPRITE_INFO},
-     *                   {@link InfoTypes#SNAPSHOT_BY_TIME_OFFSET_INFO SNAPSHOT_BY_TIME_OFFSET_INFO}
+     *                   备选项： {@link InfoType#BASIC_INFO BASIC_INFO}, {@link InfoType#TRANSCODE_INFO TRANSCODE_INFO},
+     *                   {@link InfoType#IMAGE_SPRITE_INFO IMAGE_SPRITE_INFO},
+     *                   {@link InfoType#SNAPSHOT_BY_TIME_OFFSET_INFO SNAPSHOT_BY_TIME_OFFSET_INFO}
      * @throws QcloudSdkException 请求出错时抛出
      */
-    void getVideoInfo(String fileId, InfoTypes... infoFilter) throws QcloudSdkException;
+    void getVideoInfo(String fileId, InfoType... infoFilter) throws QcloudSdkException;
 
     /**
      * 批量获取视频属性信息， 包括名称、介绍、大小、时长、状态、唯一码(vid)、创建时间、修改时间、分类ID、分类名称、封面图、标签列表、描述等
@@ -159,10 +173,10 @@ public interface IVodManager {
      * 删除视频文件， 视频被删除后， 其所有附属对象（转码结果、雪碧图等）也将被删除
      *
      * @param fileId 要删除的视频文件ID
-     * @param priority 优先级，默认0， 0：中； 1：高； 2：低
+     * @param priority 优先级，默认{@link DeleteFilePriority#MIDDLE MIDDLE}
      * @throws QcloudSdkException 请求失败时抛出
      */
-    void deleteVodFile(String fileId, int priority) throws QcloudSdkException;
+    void deleteVodFile(String fileId, DeleteFilePriority priority) throws QcloudSdkException;
 
     /**
      * 为视频设置显示封面， 仅支持设置url. 如需上传本地图片，需先调用上传接口上传。

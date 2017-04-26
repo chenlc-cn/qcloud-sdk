@@ -17,6 +17,7 @@
 package cn.chenlc.qcloud.sdk.vod.operators;
 
 import cn.chenlc.qcloud.sdk.common.consts.Region;
+import cn.chenlc.qcloud.sdk.common.exceptions.ParamException;
 import cn.chenlc.qcloud.sdk.common.exceptions.QcloudSdkException;
 import cn.chenlc.qcloud.sdk.common.exceptions.ServerException;
 import cn.chenlc.qcloud.sdk.common.http.HttpMethod;
@@ -34,6 +35,7 @@ import cn.chenlc.qcloud.sdk.vod.vo.VodFilePlayInfo;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -48,6 +50,11 @@ import java.util.Map;
  */
 public class VodManagerOperator extends AbstractOperator implements IVodManager{
 
+
+    private static final class COMMON_PARAMS {
+        private static final String FILE_ID = "fileId";
+    }
+
     private static final class DESCRIBE_VOD_PLAY_URLS {
         private static final String ACTION = "DescribeVodPlayUrls";
         private static final String INPUT_FILE_ID = "fileId";
@@ -61,7 +68,11 @@ public class VodManagerOperator extends AbstractOperator implements IVodManager{
 
     private static final class MODIFY_VOD_INFO {
         private static final String ACTION = "ModifyVodInfo";
-        private static final String INPUT_FILE_ID = "fileId";
+    }
+
+    private static final class DELETE_VOD_FILE {
+        private static final String ACTION = "DeleteVodFile";
+        private static final String INPUT_PRIORITY = "priority";
     }
 
     private Region region;
@@ -104,7 +115,7 @@ public class VodManagerOperator extends AbstractOperator implements IVodManager{
     }
 
     @Override
-    public void getVideoInfo(String fileId, InfoTypes... infoFilter) throws QcloudSdkException {
+    public void getVideoInfo(String fileId, InfoType... infoFilter) throws QcloudSdkException {
 
     }
 
@@ -131,7 +142,7 @@ public class VodManagerOperator extends AbstractOperator implements IVodManager{
     @Override
     public void modifyVodInfo(String fileId, NamedParamPair... modifyParams) throws QcloudSdkException {
         Map<String, String> params = genCommonParams(MODIFY_VOD_INFO.ACTION, region);
-        params.put(MODIFY_VOD_INFO.INPUT_FILE_ID, fileId);
+        params.put(COMMON_PARAMS.FILE_ID, fileId);
         for (NamedParamPair p : modifyParams) {
             params.put(p.getKey(), p.getValue());
         }
@@ -149,8 +160,27 @@ public class VodManagerOperator extends AbstractOperator implements IVodManager{
     }
 
     @Override
-    public void deleteVodFile(String fileId, int priority) throws QcloudSdkException {
+    public void deleteVodFile(String fileId, DeleteFilePriority priority) throws QcloudSdkException {
+        if (StringUtils.isBlank(fileId)) {
+            throw new ParamException("fileId is blank!");
+        }
+        Map<String, String> params = genCommonParams(DELETE_VOD_FILE.ACTION, region);
+        params.put(COMMON_PARAMS.FILE_ID, fileId);
+        if (priority == null) {
+            priority = DeleteFilePriority.MIDDLE;
+        }
+        params.put(DELETE_VOD_FILE.INPUT_PRIORITY, priority.value());
+        params.put(ParamKeys.SIGNATURE_KEY, Sign.sign(credential, HttpMethod.GET, params));
 
+        HttpRequest request = new HttpRequest();
+        request.setUrl(VodConstants.REQUEST_URL).setMethod(HttpMethod.GET).setQueryParams(params);
+
+        String resJsonString = httpClient.sendHttpRequest(request);
+        JSONObject resJson = JSON.parseObject(resJsonString);
+        int code = resJson.getIntValue(ParamKeys.OUTPUT_CODE);
+        if (code != 0) {
+            throw new ServerException(code, resJson.getString(ParamKeys.OUTPUT_MESSAGE));
+        }
     }
 
     @Override

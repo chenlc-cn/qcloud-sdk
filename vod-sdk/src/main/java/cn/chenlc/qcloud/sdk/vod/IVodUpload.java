@@ -128,6 +128,14 @@ public interface IVodUpload {
     UploadSuccessResponse uploadVodFile(File file, String fileType, UploadOptionalParams optionalParams) throws IOException, QcloudSdkException;
 
     /**
+     * 通过用户传递的URL和配置，自动从已有的资源库批量拉去视频文件到腾讯云
+     *
+     * @param pullList 拉去文件配置列表
+     * @throws QcloudSdkException 请求失败时抛出
+     */
+    void multiPullVodFile(List<MultiPullParams> pullList) throws QcloudSdkException;
+
+    /**
      * 文件上传初始化，可选参数集
      */
     class UploadOptionalParams {
@@ -136,6 +144,7 @@ public interface IVodUpload {
         private Boolean isTranscode;
         private Boolean isScreenshot;
         private Boolean isWatermark;
+        private Long storeTime;
 
         public List<String> getTags() {
             return tags;
@@ -179,6 +188,109 @@ public interface IVodUpload {
 
         public void setIsWatermark(Boolean watermark) {
             isWatermark = watermark;
+        }
+
+        public Long getStoreTime() {
+            return storeTime;
+        }
+
+        public void setStoreTime(Long storeTime) {
+            this.storeTime = storeTime;
+        }
+    }
+
+    enum MultiPullPriority {
+        MIDDLE("0"), HIGH("1"), LOW("2");
+
+        private final String value;
+
+        MultiPullPriority(String value) {
+            this.value = value;
+        }
+
+        public String value() {
+            return value;
+        }
+    }
+
+    class MultiPullParams {
+        private final String url;
+        private final String fileName;
+        private String fileMd5;
+        private Boolean isTranscode;
+        private Boolean isScreenshot;
+        private Boolean isWaterMark;
+        private Integer classId;
+        private List<String> tags = new ArrayList<>();
+        private MultiPullPriority priority;
+
+        public MultiPullParams(String url, String fileName) {
+            this.url = url;
+            this.fileName = fileName;
+        }
+
+        public String getUrl() {
+            return url;
+        }
+
+        public String getFileName() {
+            return fileName;
+        }
+
+        public String getFileMd5() {
+            return fileMd5;
+        }
+
+        public void setFileMd5(String fileMd5) {
+            this.fileMd5 = fileMd5;
+        }
+
+        public Boolean getIsTranscode() {
+            return isTranscode;
+        }
+
+        public void setIsTranscode(Boolean isTranscode) {
+            this.isTranscode = isTranscode;
+        }
+
+        public Boolean getIsScreenshot() {
+            return isScreenshot;
+        }
+
+        public void setIsScreenshot(Boolean isScreenshot) {
+            this.isScreenshot = isScreenshot;
+        }
+
+        public Boolean getIsWaterMark() {
+            return isWaterMark;
+        }
+
+        public void setIsWaterMark(Boolean isWaterMark) {
+            this.isWaterMark = isWaterMark;
+        }
+
+        public Integer getClassId() {
+            return classId;
+        }
+
+        public void setClassId(Integer classId) {
+            this.classId = classId;
+        }
+
+        public List<String> getTags() {
+            return tags;
+        }
+
+        public void setTags(List<String> tags) {
+            this.tags = tags;
+        }
+
+        public MultiPullPriority getPriority() {
+            return priority;
+        }
+
+        public void setPriority(MultiPullPriority priority) {
+            this.priority = priority;
         }
     }
 }

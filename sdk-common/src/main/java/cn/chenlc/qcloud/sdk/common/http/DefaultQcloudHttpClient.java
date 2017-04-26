@@ -66,8 +66,9 @@ public class DefaultQcloudHttpClient extends QcloudHttpClient {
                     uriBuilder.addParameter(key, params.get(key));
                 }
                 URI uriWithParams = uriBuilder.build();
-                LOGGER.debug("POST {}", uriWithParams);
-                httpPost = new HttpPost(uriWithParams);
+                String finalUrl = uriWithParams.toString().replace("*", "%2A").replace("+", "%20").replace("%7E","~");
+                LOGGER.debug("POST {}", finalUrl);
+                httpPost = new HttpPost(finalUrl);
             } catch (URISyntaxException e) {
                 throw new ParamException("Invalid url: " + url);
             }
@@ -118,9 +119,10 @@ public class DefaultQcloudHttpClient extends QcloudHttpClient {
                 for (String key : params.keySet()) {
                     uriBuilder.addParameter(key, params.get(key));
                 }
-                URI urlWithParams = uriBuilder.build();
-                LOGGER.debug("GET {}", urlWithParams.toString());
-                httpGet = new HttpGet(urlWithParams);
+                URI uriWithParams = uriBuilder.build();
+                String finalUrl = uriWithParams.toString().replace("*", "%2A").replace("+", "%20").replace("%7E","~");
+                LOGGER.debug("GET {}", finalUrl);
+                httpGet = new HttpGet(finalUrl);
             } catch (URISyntaxException e) {
                 throw new ParamException("Invalid url: " + url);
             }
